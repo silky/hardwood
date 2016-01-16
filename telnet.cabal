@@ -1,0 +1,48 @@
+name:                telnet
+version:             0.1.0.0
+synopsis:            Initial project template from stack
+description:         Please see README.md
+homepage:            http://github.com/narrative/telnet#readme
+license:             BSD3
+license-file:        LICENSE
+author:              erik stevenson
+maintainer:          eriknstevenson@gmail.com
+copyright:           2010 Author Here
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Telnet
+                     , Telnet.Parser
+  build-depends:       base >= 4.7 && < 5
+                     , ansi-terminal
+                     , bytestring
+                     , attoparsec
+  default-language:    Haskell2010
+
+executable telnet-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , telnet
+  default-language:    Haskell2010
+
+test-suite telnet-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , telnet
+                     , ansi-terminal
+                     , attoparsec
+                     , hspec
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/narrative/telnet
