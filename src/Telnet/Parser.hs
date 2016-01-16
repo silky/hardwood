@@ -5,8 +5,7 @@ module Telnet.Parser
     , Command (..)
     , Option (..)
     , TelnetCommand (..)
-    )
-    where
+    ) where
 
 import Control.Applicative
 import Control.Monad
@@ -38,8 +37,7 @@ instance Enum Command where
   toEnum 240 = SE
   toEnum 250 = SB
 
-data Option = GMCP
-            deriving (Show, Eq, Read)
+data Option = GMCP deriving (Show, Eq, Read)
 
 instance Enum Option where
   fromEnum GMCP = 201
@@ -47,16 +45,26 @@ instance Enum Option where
 
 data TelnetCommand = TelnetCommand Command (Maybe Option) deriving (Show, Eq, Read)
 
+parseTelnetCommand :: Parser TelnetCommand
+parseTelnetCommand = do
+  iac
+  cmd <- parseCommand
+  opt <- option Nothing parseOption
+  return $ TelnetCommand cmd opt
+    where iac = word8 255
+          parseCommand = undefined
+          parseOption = undefined
+
+-- Rudimentary ANSI control code parser.
+-- Supported features:
+-- * SGR (Colors & Reset only)
 parseANSI :: Parser [SGR]
 parseANSI = do
   csi
-  args <- semicolonSep validArg
-  code <- finalByte
+  args <- validArg `sepBy` char ';'
+  code <- char 'm'
   return $ decodeANSI (code, Prelude.reverse args) []
-  where
-    csi = char '\ESC' >> char '['
-    finalByte = char 'm'
-    semicolonSep p = p `sepBy` char ';'
+  where csi = char '\ESC' >> char '['
 
 decodeANSI :: (Char, [Int]) -> [SGR] -> [SGR]
 decodeANSI (code@'m', 0:xs) sgrs =
@@ -72,6 +80,11 @@ validArg = reset
        <|> fgVivid
        <|> bgDull
        <|> bgVivid
+         where reset = liftM digitToInt $ char '0'
+               fgDull = decimalRange 30 37
+               fgVivid = decimalRange 90 97
+               bgDull = decimalRange 40 47
+               bgVivid = decimalRange 100 107
 
 lookupColor :: Int -> SGR
 lookupColor arg
@@ -85,21 +98,6 @@ lookupColor arg
     SetColor Background Vivid (toEnum $ arg - 100)
   | otherwise =
     error "attempted to decode something that shouldn't have been parsed."
-
-reset :: Parser Int
-reset = liftM digitToInt $ char '0'
-
-fgDull :: Parser Int
-fgDull = decimalRange 30 37
-
-fgVivid :: Parser Int
-fgVivid = decimalRange 90 97
-
-bgDull :: Parser Int
-bgDull = decimalRange 40 47
-
-bgVivid :: Parser Int
-bgVivid = decimalRange 100 107
 
 decimalRange :: Int -> Int -> Parser Int
 decimalRange lower upper = do
