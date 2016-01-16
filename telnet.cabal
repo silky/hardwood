@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              erik stevenson
 maintainer:          eriknstevenson@gmail.com
-copyright:           2010 Author Here
+copyright:           2015 erik stevenson
 category:            Web
 build-type:          Simple
 -- extra-source-files:

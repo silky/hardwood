@@ -1,6 +1,6 @@
 module Telnet
-    ( someFunc
+    (
     ) where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+import Telnet.Parser
+
