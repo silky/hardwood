@@ -2,7 +2,7 @@
 
 module Hardwood.Parser
     ( parseANSI
-    , Command (..)
+    , parseTelnetCommand
     , Option (..)
     , TelnetCommand (..)
     ) where
@@ -15,45 +15,42 @@ import Data.ByteString
 import Data.Char
 import System.Console.ANSI
 
-data Command = Do
-             | Dont
-             | Will
-             | Wont
-             | SE
-             | SB
-             deriving (Show, Eq, Read)
-
-instance Enum Command where
-  fromEnum Do = 253
-  fromEnum Dont = 254
-  fromEnum Will = 251
-  fromEnum Wont = 252
-  fromEnum SE = 240
-  fromEnum SB = 250
-  toEnum 253 = Do
-  toEnum 254 = Dont
-  toEnum 251 = Will
-  toEnum 252 = Wont
-  toEnum 240 = SE
-  toEnum 250 = SB
-
 data Option = GMCP deriving (Show, Eq, Read)
 
 instance Enum Option where
   fromEnum GMCP = 201
   toEnum 201 = GMCP
 
-data TelnetCommand = TelnetCommand Command (Maybe Option) deriving (Show, Eq, Read)
+data TelnetCommand = Do Option
+                   | Dont Option
+                   | Will Option
+                   | Wont Option
+                   deriving (Show, Eq, Read)
 
 parseTelnetCommand :: Parser TelnetCommand
 parseTelnetCommand = do
   iac
   cmd <- parseCommand
-  opt <- option Nothing parseOption
-  return $ TelnetCommand cmd opt
+  opt <- parseOption
+  return $ cmd opt
     where iac = word8 255
-          parseCommand = undefined
-          parseOption = undefined
+          parseCommand = (word8 253 >> return Do)
+                     <|> (word8 254 >> return Dont)
+                     <|> (word8 251 >> return Will)
+                     <|> (word8 252 >> return Wont)
+          parseOption = word8 (fromIntegral . fromEnum $ GMCP) >> return GMCP
+
+{- parseGMCP :: Parser GMCP
+parseGMCP = do
+  iac
+  sb
+  gmcp <- return () -- parse JSON
+  se
+  return gmcp
+    where iac = word8 255
+          sb = word8 250
+          se = word8 240
+-}
 
 -- Rudimentary ANSI control code parser.
 -- Supported features:
@@ -80,7 +77,8 @@ validArg = reset
        <|> fgVivid
        <|> bgDull
        <|> bgVivid
-         where reset = liftM digitToInt $ char '0'
+         where --reset = liftM digitToInt $ char '0'
+               reset = digitToInt <$> char '0'
                fgDull = decimalRange 30 37
                fgVivid = decimalRange 90 97
                bgDull = decimalRange 40 47

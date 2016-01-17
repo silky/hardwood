@@ -1,4 +1,4 @@
-module Hardwood where
+module Hardwood () where
 
 import Hardwood.Parser
 
