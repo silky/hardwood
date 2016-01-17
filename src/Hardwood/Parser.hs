@@ -23,9 +23,6 @@ data TelnetCommand = Do Word8
                    | Wont Word8
                    deriving (Show, Eq, Read)
 
-gmcp :: Word8
-gmcp = 201
-
 parseTelnetCommand :: Parser TelnetCommand
 parseTelnetCommand = do
   iac
@@ -46,11 +43,13 @@ parseGMCP :: Parser ByteString
 parseGMCP = do
   iac
   sb
-  gmcp <- takeTill (==se)
-  return gmcp
+  gmcp
+  gmcpMsg <- takeTill (==se)
+  return gmcpMsg
     where iac = word8 255
           sb = word8 250
           se = 240
+          gmcp = word8 201
 
 -- Rudimentary ANSI control code parser.
 -- Supported features:
