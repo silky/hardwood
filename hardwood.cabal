@@ -1,8 +1,8 @@
-name:                telnet
+name:                hardwood
 version:             0.1.0.0
-synopsis:            Initial project template from stack
+synopsis:            mud client
 description:         Please see README.md
-homepage:            http://github.com/narrative/telnet#readme
+homepage:            http://github.com/narrative/hardwood#readme
 license:             BSD3
 license-file:        LICENSE
 author:              erik stevenson
@@ -15,28 +15,28 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Telnet
-                     , Telnet.Parser
+  exposed-modules:     Hardwood
+                     , Hardwood.Parser
   build-depends:       base >= 4.7 && < 5
                      , ansi-terminal
                      , bytestring
                      , attoparsec
   default-language:    Haskell2010
 
-executable telnet-exe
+executable hardwood-exe
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
-                     , telnet
+                     , hardwood
   default-language:    Haskell2010
 
-test-suite telnet-test
+test-suite hardwood-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , telnet
+                     , hardwood
                      , ansi-terminal
                      , attoparsec
                      , hspec
@@ -45,4 +45,4 @@ test-suite telnet-test
 
 source-repository head
   type:     git
-  location: https://github.com/narrative/telnet
+  location: https://github.com/narrative/hardwood

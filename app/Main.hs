@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import Telnet
+import Hardwood
 
 main :: IO ()
-main = putStrLn "Telnet"
+main = putStrLn "hello world"

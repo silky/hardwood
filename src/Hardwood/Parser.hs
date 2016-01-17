@@ -1,6 +1,6 @@
 {- LANGUAGE OverloadedStrings -}
 
-module Telnet.Parser
+module Hardwood.Parser
     ( parseANSI
     , Command (..)
     , Option (..)
