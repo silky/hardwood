@@ -1,56 +1,56 @@
-{- LANGUAGE OverloadedStrings -}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Hardwood.Parser
     ( parseANSI
     , parseTelnetCommand
-    , Option (..)
+    , parseGMCP
     , TelnetCommand (..)
     ) where
 
 import Control.Applicative
 import Control.Monad
 import Data.Attoparsec.ByteString
-import Data.Attoparsec.ByteString.Char8
+import Data.Attoparsec.ByteString.Char8 hiding (takeTill)
 import Data.ByteString
 import Data.Char
+import Data.Word
 import System.Console.ANSI
 
-data Option = GMCP deriving (Show, Eq, Read)
-
-instance Enum Option where
-  fromEnum GMCP = 201
-  toEnum 201 = GMCP
-
-data TelnetCommand = Do Option
-                   | Dont Option
-                   | Will Option
-                   | Wont Option
+data TelnetCommand = Do Word8
+                   | Dont Word8
+                   | Will Word8
+                   | Wont Word8
                    deriving (Show, Eq, Read)
+
+gmcp :: Word8
+gmcp = 201
 
 parseTelnetCommand :: Parser TelnetCommand
 parseTelnetCommand = do
   iac
   cmd <- parseCommand
-  opt <- parseOption
+  opt <- anyWord8
   return $ cmd opt
     where iac = word8 255
           parseCommand = (word8 253 >> return Do)
                      <|> (word8 254 >> return Dont)
                      <|> (word8 251 >> return Will)
                      <|> (word8 252 >> return Wont)
-          parseOption = word8 (fromIntegral . fromEnum $ GMCP) >> return GMCP
 
-{- parseGMCP :: Parser GMCP
+escapedIAC :: Parser Word8
+escapedIAC = do
+  word8 255 >> word8 255 >> return 255
+
+parseGMCP :: Parser ByteString
 parseGMCP = do
   iac
   sb
-  gmcp <- return () -- parse JSON
-  se
+  gmcp <- takeTill (==se)
   return gmcp
     where iac = word8 255
           sb = word8 250
-          se = word8 240
--}
+          se = 240
 
 -- Rudimentary ANSI control code parser.
 -- Supported features:
