@@ -43,8 +43,10 @@ data TelnetCommand = Do Word8
                    | Wont Word8
                    deriving (Show, Eq, Read)
 
+<<<<<<< HEAD
 parseTelnetCmd :: Parser TelnetMessage
 parseTelnetCmd = do
+>>>>>>> 0fb813520e91af57d49abd7e97d81d36bf042a96
   iac
   cmd <- parseCommand
   opt <- anyWord8
@@ -64,6 +66,7 @@ parseGMCP = do
   iac
   sb
   gmcp
+<<<<<<< HEAD
   key <- T.pack <$> moduleName
   C.space
   val <- decodeUtf8 <$> jsonContent
@@ -75,6 +78,7 @@ parseGMCP = do
         gmcp = word8 201
         moduleName = many1 . C.satisfy $ C.inClass "a-zA-Z."
         jsonContent = takeTill (==se)
+>>>>>>> 0fb813520e91af57d49abd7e97d81d36bf042a96
 
 -- Rudimentary ANSI control code parser.
 -- Supported features:
