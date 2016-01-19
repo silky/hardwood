@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Hardwood.Parser
     ( parseANSI
@@ -11,9 +10,13 @@ module Hardwood.Parser
 import Control.Applicative
 import Control.Monad
 import Data.Attoparsec.ByteString
-import Data.Attoparsec.ByteString.Char8 hiding (takeTill)
+import Data.Attoparsec.ByteString.Char8 (char, space, decimal)
+import qualified Data.Attoparsec.ByteString.Char8 as C
 import Data.ByteString
 import Data.Char
+import qualified Data.Map as Map
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8)
 import Data.Word
 import System.Console.ANSI
 
@@ -22,9 +25,6 @@ data TelnetCommand = Do Word8
                    | Will Word8
                    | Wont Word8
                    deriving (Show, Eq, Read)
-
-gmcp :: Word8
-gmcp = 201
 
 parseTelnetCommand :: Parser TelnetCommand
 parseTelnetCommand = do
@@ -39,18 +39,24 @@ parseTelnetCommand = do
                      <|> (word8 252 >> return Wont)
 
 escapedIAC :: Parser Word8
-escapedIAC = do
-  word8 255 >> word8 255 >> return 255
+escapedIAC = word8 255 >> word8 255 >> return 255
 
-parseGMCP :: Parser ByteString
+parseGMCP :: Parser (Map.Map T.Text T.Text)
 parseGMCP = do
   iac
   sb
-  gmcp <- takeTill (==se)
-  return gmcp
-    where iac = word8 255
-          sb = word8 250
-          se = 240
+  gmcp
+  key <- T.pack <$> moduleName
+  space
+  val <- decodeUtf8 <$> jsonContent
+  word8 se
+  return $ Map.singleton key val
+  where iac = word8 255
+        sb = word8 250
+        se = 240
+        gmcp = word8 201
+        moduleName = many1 . C.satisfy $ C.inClass "a-zA-Z."
+        jsonContent = takeTill (==se)
 
 -- Rudimentary ANSI control code parser.
 -- Supported features:
@@ -77,8 +83,7 @@ validArg = reset
        <|> fgVivid
        <|> bgDull
        <|> bgVivid
-         where --reset = liftM digitToInt $ char '0'
-               reset = digitToInt <$> char '0'
+         where reset = digitToInt <$> char '0'
                fgDull = decimalRange 30 37
                fgVivid = decimalRange 90 97
                bgDull = decimalRange 40 47
@@ -101,3 +106,5 @@ decimalRange :: Int -> Int -> Parser Int
 decimalRange lower upper = do
   d <- decimal
   if d >= lower && d <= upper then return d else fail "decimalRange"
+
+

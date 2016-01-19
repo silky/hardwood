@@ -18,10 +18,12 @@ library
   exposed-modules:     Hardwood
                      , Hardwood.Parser
   build-depends:       base >= 4.7 && < 5
-                     --, aeson
+                    -- , aeson
                      , ansi-terminal
                      , attoparsec
                      , bytestring
+                     , containers
+                     , text
   default-language:    Haskell2010
 
 executable hardwood-exe
