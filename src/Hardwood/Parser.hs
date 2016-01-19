@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Hardwood.Parser
-    ( parseANSI
-    , parseTelnetCommand
-    , parseGMCP
+    ( parseTelnetMessage
     , TelnetCommand (..)
+    , TelnetMessage (..)
     ) where
 
 import Control.Applicative
@@ -20,18 +19,30 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Word
 import System.Console.ANSI
 
+data TelnetMessage = Cmd TelnetCommand
+                   | GMCP (Map.Map T.Text T.Text)
+                   | ANSI [SGR]
+                   | GameText Char
+                   deriving (Show, Eq, Read)
+
+parseTelnetMessage :: Parser TelnetMessage
+parseTelnetMessage = parseTelnetCommand
+                 <|> parseGMCP
+                 <|> parseANSI
+                 <|> parseGameText
+
 data TelnetCommand = Do Word8
                    | Dont Word8
                    | Will Word8
                    | Wont Word8
                    deriving (Show, Eq, Read)
 
-parseTelnetCommand :: Parser TelnetCommand
+parseTelnetCommand :: Parser TelnetMessage
 parseTelnetCommand = do
   iac
   cmd <- parseCommand
   opt <- anyWord8
-  return $ cmd opt
+  return . Cmd $ cmd opt
     where iac = word8 255
           parseCommand = (word8 253 >> return Do)
                      <|> (word8 254 >> return Dont)
@@ -41,7 +52,7 @@ parseTelnetCommand = do
 escapedIAC :: Parser Word8
 escapedIAC = word8 255 >> word8 255 >> return 255
 
-parseGMCP :: Parser (Map.Map T.Text T.Text)
+parseGMCP :: Parser TelnetMessage
 parseGMCP = do
   iac
   sb
@@ -50,7 +61,7 @@ parseGMCP = do
   space
   val <- decodeUtf8 <$> jsonContent
   word8 se
-  return $ Map.singleton key val
+  return . GMCP $ Map.singleton key val
   where iac = word8 255
         sb = word8 250
         se = 240
@@ -61,12 +72,12 @@ parseGMCP = do
 -- Rudimentary ANSI control code parser.
 -- Supported features:
 -- * SGR (Colors & Reset only)
-parseANSI :: Parser [SGR]
+parseANSI :: Parser TelnetMessage
 parseANSI = do
   csi
   args <- validArg `sepBy` char ';'
   code <- char 'm'
-  return $ decodeANSI (code, Prelude.reverse args) []
+  return . ANSI $ decodeANSI (code, Prelude.reverse args) []
   where csi = char '\ESC' >> char '['
 
 decodeANSI :: (Char, [Int]) -> [SGR] -> [SGR]
@@ -106,5 +117,10 @@ decimalRange :: Int -> Int -> Parser Int
 decimalRange lower upper = do
   d <- decimal
   if d >= lower && d <= upper then return d else fail "decimalRange"
+
+parseGameText :: Parser TelnetMessage
+parseGameText = do
+  c <- C.anyChar
+  return . GameText $ c
 
 
