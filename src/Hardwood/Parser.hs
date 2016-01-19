@@ -9,7 +9,7 @@ module Hardwood.Parser
 import Control.Applicative
 import Control.Monad
 import Data.Attoparsec.ByteString
-import Data.Attoparsec.ByteString.Char8 (char, space, decimal)
+import Data.Attoparsec.ByteString.Char8 (char)
 import qualified Data.Attoparsec.ByteString.Char8 as C
 import Data.ByteString
 import Data.Char
@@ -19,14 +19,20 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Word
 import System.Console.ANSI
 
+-- TODO: change GMCP to a mapping from T.Text to JSON Objects (once aeson parsing is implemented)
+-- TODO: change [SGR] to a different way of storing color options besides SGR because
+--       System.Console.ANSI isn't going to be used for display.
 data TelnetMessage = Cmd TelnetCommand
                    | GMCP (Map.Map T.Text T.Text)
                    | ANSI [SGR]
                    | GameText Char
                    deriving (Show, Eq, Read)
 
+parseAll :: Parser [TelnetMessage]
+parseAll = many1 parseTelnetMessage
+
 parseTelnetMessage :: Parser TelnetMessage
-parseTelnetMessage = parseTelnetCommand
+parseTelnetMessage = parseTelnetCmd
                  <|> parseGMCP
                  <|> parseANSI
                  <|> parseGameText
@@ -37,8 +43,8 @@ data TelnetCommand = Do Word8
                    | Wont Word8
                    deriving (Show, Eq, Read)
 
-parseTelnetCommand :: Parser TelnetMessage
-parseTelnetCommand = do
+parseTelnetCmd :: Parser TelnetMessage
+parseTelnetCmd = do
   iac
   cmd <- parseCommand
   opt <- anyWord8
@@ -52,13 +58,14 @@ parseTelnetCommand = do
 escapedIAC :: Parser Word8
 escapedIAC = word8 255 >> word8 255 >> return 255
 
+-- TODO: convert the value to a JSON object using aeson
 parseGMCP :: Parser TelnetMessage
 parseGMCP = do
   iac
   sb
   gmcp
   key <- T.pack <$> moduleName
-  space
+  C.space
   val <- decodeUtf8 <$> jsonContent
   word8 se
   return . GMCP $ Map.singleton key val
@@ -80,6 +87,8 @@ parseANSI = do
   return . ANSI $ decodeANSI (code, Prelude.reverse args) []
   where csi = char '\ESC' >> char '['
 
+-- TODO: Decode to another color format besides SGR, System.Console.ANSI is
+--       not going to be used for display.
 decodeANSI :: (Char, [Int]) -> [SGR] -> [SGR]
 decodeANSI (code@'m', 0:xs) sgrs =
   decodeANSI (code, xs) (Reset : sgrs)
@@ -115,7 +124,7 @@ lookupColor arg
 
 decimalRange :: Int -> Int -> Parser Int
 decimalRange lower upper = do
-  d <- decimal
+  d <- C.decimal
   if d >= lower && d <= upper then return d else fail "decimalRange"
 
 parseGameText :: Parser TelnetMessage
