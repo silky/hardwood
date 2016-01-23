@@ -2,6 +2,7 @@
 
 module Main where
 
+--import Graphics.UI.FLTK.LowLevel.FLTKHS
 import Hardwood
 
 main :: IO ()

@@ -16,13 +16,18 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Hardwood
+                     , Hardwood.Network
                      , Hardwood.Parser
+                     , Hardwood.UI
   build-depends:       base >= 4.7 && < 5
-                    -- , aeson
+                     , aeson
                      , ansi-terminal
                      , attoparsec
                      , bytestring
                      , containers
+                     , gtk3
+                     , pipes
+                     , pipes-network
                      , text
   default-language:    Haskell2010
 

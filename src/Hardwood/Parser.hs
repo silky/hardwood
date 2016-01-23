@@ -1,19 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Hardwood.Parser
-    ( parseTelnetMessage
+    ( telnetMessage
     , TelnetCommand (..)
     , TelnetMessage (..)
     ) where
 
 import Control.Applicative
 import Control.Monad
+import Data.Aeson
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8 (char)
 import qualified Data.Attoparsec.ByteString.Char8 as C
 import Data.ByteString
 import Data.Char
 import qualified Data.Map as Map
+import Data.Maybe
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Word
@@ -26,13 +28,13 @@ data TelnetMessage = Cmd TelnetCommand
                    | GMCP (Map.Map T.Text T.Text)
                    | ANSI [SGR]
                    | GameText Char
-                   deriving (Show, Eq, Read)
+                   deriving (Show, Eq)
 
 parseAll :: Parser [TelnetMessage]
-parseAll = many1 parseTelnetMessage
+parseAll = many1 telnetMessage
 
-parseTelnetMessage :: Parser TelnetMessage
-parseTelnetMessage = parseTelnetCmd
+telnetMessage :: Parser TelnetMessage
+telnetMessage = parseTelnetCmd
                  <|> parseGMCP
                  <|> parseANSI
                  <|> parseGameText
